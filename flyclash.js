@@ -21,7 +21,7 @@ const ruleOptions = {
   disney: true,
   pixiv: true,
   hbo: true,
-  biliintl: true,
+  biliintl: false, // 修改：禁用国际版代理，确保bilibili.com全直连
   tvb: true,
   hulu: true,
   primevideo: true,
@@ -322,13 +322,6 @@ function main(config) {
     });
   }
 
-  // 哔哩哔哩东南亚
-  if (ruleOptions.biliintl) {
-    proxyGroups.forEach(group => {
-      rules.push(`GEOSITE,biliintl,${group}`);
-    });
-  }
-
   // 巴哈姆特
   if (ruleOptions.bahamut) {
     proxyGroups.forEach(group => {
@@ -494,7 +487,7 @@ function main(config) {
     ...proxyGroups.map(group => `RULE-SET,YouTube,${group}`),
     ...proxyGroups.map(group => `RULE-SET,Netflix,${group}`),
     ...proxyGroups.map(group => `RULE-SET,Spotify,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,BilibiliHMT,${group}`),
+    // ...proxyGroups.map(group => `RULE-SET,BilibiliHMT,${group}`), // 修改：注释掉，禁用Bilibili海外内容代理
     ...proxyGroups.map(group => `RULE-SET,google,${group}`),
     ...proxyGroups.map(group => `RULE-SET,proxy,${group}`),
     ...proxyGroups.map(group => `RULE-SET,gfw,${group}`),
@@ -506,7 +499,7 @@ function main(config) {
     // 其他
     'GEOSITE,private,DIRECT',
     'GEOIP,private,DIRECT,no-resolve',
-    'GEOSITE,cn,DIRECT',
+    'GEOSITE,cn,DIRECT', // 捕获所有bilibili域名，包括intl
     'GEOIP,cn,DIRECT,no-resolve',
     // 自定义规则
     ...proxyGroups.map(group => `DOMAIN-SUFFIX,cloudflare.com,${group}`),
