@@ -30,7 +30,7 @@ const RULE_OPTIONS = {
   games: true,
   japan: true,
   tracker: true,
-  ads: true,
+  ads: false, // 禁用广告过滤
 };
 
 // 前置规则
@@ -371,9 +371,7 @@ function main(config) {
   if (RULE_OPTIONS.tracker) {
     rules.push('GEOSITE,tracker,REJECT');
   }
-  if (RULE_OPTIONS.ads) {
-    rules.push('GEOSITE,category-ads-all,REJECT');
-  }
+  // 移除广告过滤规则：不再添加 'GEOSITE,category-ads-all,REJECT'
 
   // 苹果服务
   if (RULE_OPTIONS.apple) {
