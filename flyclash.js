@@ -54,7 +54,7 @@ const DNS_CONFIG = {
   'respect-rules': true,
   'enhanced-mode': 'fake-ip',
   'fake-ip-range': '198.18.0.1/16',
-  'fake-ip-filter': ['*', '+.lan', '+.local', '+.market.xiaomi.com'],
+  'fake-ip-filter': ['+.lan', '+.local', '+.market.xiaomi.com'],
   nameserver: ['https://120.53.53.53/dns-query', 'https://223.5.5.5/dns-query'],
   'proxy-server-nameserver': ['https://120.53.53.53/dns-query', 'https://223.5.5.5/dns-query'],
   'nameserver-policy': {
