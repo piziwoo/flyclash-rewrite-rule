@@ -2,7 +2,7 @@
 const CONSTANTS = {
   TEST_INTERVAL: 300,
   TEST_TOLERANCE: 50,
-  ENABLE: true, // 总开关：true=启用分流，false=禁用
+  ENABLE: true,
 };
 
 // 分流规则开关配置
@@ -35,7 +35,6 @@ const RULE_OPTIONS = {
 
 // 前置规则
 const FRONT_RULES = [
-  'RULE-SET,applications,DIRECT',
   'PROCESS-NAME,SunloginClient,DIRECT',
   'PROCESS-NAME,AnyDesk,DIRECT',
   'PROCESS-NAME,NodeBabyLinkBackup,DIRECT',
@@ -82,30 +81,11 @@ const GROUP_BASE_OPTION = {
 
 // 规则提供者配置
 const RULE_PROVIDERS = new Map([
-  ['applications', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'classical',
-    format: 'text',
-    url: 'https://fastly.jsdelivr.net/gh/DustinWin/ruleset_geodata@clash-ruleset/applications.list',
-    path: './ruleset/DustinWin/applications.list',
-  }],
   ['reject', {
     ...RULE_PROVIDER_COMMON,
     behavior: 'domain',
     url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt',
     path: './ruleset/loyalsoldier/reject.yaml',
-  }],
-  ['icloud', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt',
-    path: './ruleset/loyalsoldier/icloud.yaml',
-  }],
-  ['apple', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt',
-    path: './ruleset/loyalsoldier/apple.yaml',
   }],
   ['google', {
     ...RULE_PROVIDER_COMMON,
@@ -409,8 +389,6 @@ function main(config) {
   rules.push(
     'RULE-SET,private,DIRECT',
     'RULE-SET,reject,REJECT',
-    'RULE-SET,icloud,DIRECT',
-    'RULE-SET,apple,DIRECT',
     ...proxyGroups.map(group => `RULE-SET,YouTube,${group}`),
     ...proxyGroups.map(group => `RULE-SET,Netflix,${group}`),
     ...proxyGroups.map(group => `RULE-SET,Spotify,${group}`),
