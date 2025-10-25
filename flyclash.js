@@ -234,10 +234,10 @@ function main(config) {
   };
   config['ntp'] = { enable: true, 'write-to-system': false, server: 'cn.ntp.org.cn' };
   config['geox-url'] = {
-    geoip: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat',
-    geosite: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat',
-    mmdb: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country-lite.mmdb',
-    asn: 'https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb',
+    geoip: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/geoip-lite.dat',
+    geosite: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/geosite.dat',
+    mmdb: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/country-lite.mmdb',
+    asn: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/GeoLite2-ASN.mmdb',
   };
 
   // 覆盖 DNS 配置
