@@ -30,7 +30,7 @@ const RULE_OPTIONS = {
   games: true,
   japan: true,
   tracker: true,
-  ads: false, // 禁用广告过滤
+  ads: false,
 };
 
 // 前置规则
@@ -58,7 +58,7 @@ const DNS_CONFIG = {
   'proxy-server-nameserver': ['https://120.53.53.53/dns-query', 'https://223.5.5.5/dns-query'],
   'nameserver-policy': {
     'geosite:private': 'system',
-    'geosite:cn,steam@cn,category-games@cn,microsoft@cn,apple@cn': ['119.29.29.29', '223.5.5.5'],
+    'geosite:cn,steam@cn,category-games@cn,microsoft@cn,apple@cn': ['udp://119.29.29.29:53', 'udp://223.5.5.5:53'],
   },
 };
 
@@ -209,6 +209,7 @@ function main(config) {
       '+.messenger.com',
       '+.fbcdn.net',
       'fbcdn-a.akamaihd.net',
+      '+.openai.com',
     ],
     'skip-domain': ['Mijia Cloud', '+.oray.com'],
   };
@@ -268,7 +269,8 @@ function main(config) {
       ...GROUP_BASE_OPTION,
       name: '故障转移',
       type: 'fallback',
-      timeout: 1500,
+      timeout: 1000,
+      interval: 1800,
       'max-failed-times': 2,
       'include-all': true,
       filter: '^(?!.*(官网|套餐|流量|异常|剩余|直连)).*$',
@@ -276,18 +278,13 @@ function main(config) {
     },
   ];
 
-  // 定义所有分组名称
-  const proxyGroups = ['节点选择', '手动选择', '延迟选优', '故障转移'];
-
   // 动态添加分流规则
   let rules = [...FRONT_RULES];
 
   // 服务分流规则
   const addServiceRules = (service, geosite, providerKey = null) => {
     if (RULE_OPTIONS[service]) {
-      proxyGroups.forEach(group => {
-        rules.push(`GEOSITE,${geosite},${group}`);
-      });
+      rules.push(`GEOSITE,${geosite},节点选择`);
       if (providerKey) {
         RULE_PROVIDERS.set(providerKey, {
           ...RULE_PROVIDER_COMMON,
@@ -302,13 +299,11 @@ function main(config) {
 
   // AI 服务
   if (RULE_OPTIONS.openai) {
-    proxyGroups.forEach(group => {
-      rules.push(
-        `DOMAIN-SUFFIX,grazie.ai,${group}`,
-        `DOMAIN-SUFFIX,grazie.aws.intellij.net,${group}`,
-        `RULE-SET,ai,${group}`
-      );
-    });
+    rules.push(
+      `DOMAIN-SUFFIX,grazie.ai,节点选择`,
+      `DOMAIN-SUFFIX,grazie.aws.intellij.net,节点选择`,
+      `RULE-SET,ai,节点选择`
+    );
     RULE_PROVIDERS.set('ai', {
       ...RULE_PROVIDER_COMMON,
       behavior: 'classical',
@@ -318,7 +313,7 @@ function main(config) {
     });
   }
 
-  // 流媒体服务
+  // 流媒体、通讯、游戏等服务
   addServiceRules('youtube', 'youtube', 'YouTube');
   addServiceRules('bahamut', 'bahamut');
   addServiceRules('disney', 'disney');
@@ -330,52 +325,34 @@ function main(config) {
   addServiceRules('tvb', 'tvb');
   addServiceRules('primevideo', 'primevideo');
   addServiceRules('hulu', 'hulu');
-
-  // 通讯服务
-  if (RULE_OPTIONS.telegram) {
-    proxyGroups.forEach(group => {
-      rules.push(`GEOIP,telegram,${group}`);
-    });
-  }
   addServiceRules('whatsapp', 'whatsapp');
   addServiceRules('line', 'line');
 
-  // 游戏服务
-  if (RULE_OPTIONS.games) {
-    proxyGroups.forEach(group => {
-      rules.push(`GEOSITE,category-games@cn,DIRECT`, `GEOSITE,category-games,${group}`);
-    });
+  if (RULE_OPTIONS.telegram) {
+    rules.push(`GEOIP,telegram,节点选择`);
   }
 
-  // 跟踪与广告
+  if (RULE_OPTIONS.games) {
+    rules.push(`GEOSITE,category-games@cn,DIRECT`, `GEOSITE,category-games,节点选择`);
+  }
+
   if (RULE_OPTIONS.tracker) {
     rules.push('GEOSITE,tracker,REJECT');
   }
-  // 移除广告过滤规则：不再添加 'GEOSITE,category-ads-all,REJECT'
 
-  // 苹果服务
   if (RULE_OPTIONS.apple) {
     rules.push('GEOSITE,apple-cn,DIRECT');
   }
 
-  // 谷歌服务
   addServiceRules('google', 'google', 'google');
-
-  // Github
   addServiceRules('github', 'github');
 
-  // 微软服务
   if (RULE_OPTIONS.microsoft) {
-    proxyGroups.forEach(group => {
-      rules.push(`GEOSITE,microsoft@cn,DIRECT`, `GEOSITE,microsoft,${group}`);
-    });
+    rules.push(`GEOSITE,microsoft@cn,DIRECT`, `GEOSITE,microsoft,节点选择`);
   }
 
-  // 日本网站
   if (RULE_OPTIONS.japan) {
-    proxyGroups.forEach(group => {
-      rules.push(`RULE-SET,category-bank-jp,${group}`, `GEOIP,jp,${group},no-resolve`);
-    });
+    rules.push(`RULE-SET,category-bank-jp,节点选择`, `GEOIP,jp,节点选择,no-resolve`);
     RULE_PROVIDERS.set('category-bank-jp', {
       ...RULE_PROVIDER_COMMON,
       behavior: 'domain',
@@ -385,32 +362,36 @@ function main(config) {
     });
   }
 
+  // 添加 reject 规则，仅在 ads: true 时启用
+  if (RULE_OPTIONS.ads) {
+    rules.push('RULE-SET,reject,REJECT');
+  }
+
   // 后置规则
   rules.push(
     'RULE-SET,private,DIRECT',
-    'RULE-SET,reject,REJECT',
-    ...proxyGroups.map(group => `RULE-SET,YouTube,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,Netflix,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,Spotify,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,google,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,proxy,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,gfw,${group}`),
-    ...proxyGroups.map(group => `RULE-SET,tld-not-cn,${group}`),
+    'RULE-SET,YouTube,节点选择',
+    'RULE-SET,Netflix,节点选择',
+    'RULE-SET,Spotify,节点选择',
+    'RULE-SET,google,节点选择',
+    'RULE-SET,proxy,节点选择',
+    'RULE-SET,gfw,节点选择',
+    'RULE-SET,tld-not-cn,节点选择',
     'RULE-SET,direct,DIRECT',
     'RULE-SET,lancidr,DIRECT,no-resolve',
     'RULE-SET,cncidr,DIRECT,no-resolve',
-    ...proxyGroups.map(group => `RULE-SET,telegramcidr,${group},no-resolve`),
+    'RULE-SET,telegramcidr,节点选择,no-resolve',
     'GEOSITE,private,DIRECT',
     'GEOIP,private,DIRECT,no-resolve',
     'GEOSITE,cn,DIRECT',
     'GEOIP,cn,DIRECT,no-resolve',
-    ...proxyGroups.map(group => `DOMAIN-SUFFIX,cloudflare.com,${group}`),
-    ...proxyGroups.map(group => `DOMAIN-SUFFIX,googleapis.cn,${group}`),
-    ...proxyGroups.map(group => `DOMAIN-SUFFIX,gstatic.com,${group}`),
-    ...proxyGroups.map(group => `DOMAIN-SUFFIX,xn--ngstr-lra8j.com,${group}`),
-    ...proxyGroups.map(group => `DOMAIN-SUFFIX,github.io,${group}`),
-    ...proxyGroups.map(group => `DOMAIN,v2rayse.com,${group}`),
-    ...proxyGroups.map(group => `MATCH,${group}`)
+    'DOMAIN-SUFFIX,cloudflare.com,节点选择',
+    'DOMAIN-SUFFIX,googleapis.cn,DIRECT',
+    'DOMAIN-SUFFIX,gstatic.com,节点选择',
+    'DOMAIN-SUFFIX,xn--ngstr-lra8j.com,节点选择',
+    'DOMAIN-SUFFIX,github.io,节点选择',
+    'DOMAIN,v2rayse.com,节点选择',
+    'MATCH,节点选择'
   );
 
   // 覆盖规则和规则提供者
