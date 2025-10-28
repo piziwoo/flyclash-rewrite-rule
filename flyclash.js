@@ -5,7 +5,7 @@ const CONSTANTS = {
   ENABLE: true,
 };
 
-// 分流规则开关配置
+// 分流规则开关配置（ads 已永久移除）
 const RULE_OPTIONS = {
   apple: true,
   microsoft: true,
@@ -30,7 +30,6 @@ const RULE_OPTIONS = {
   games: true,
   japan: true,
   tracker: true,
-  ads: false,
 };
 
 // 前置规则
@@ -79,14 +78,8 @@ const GROUP_BASE_OPTION = {
   hidden: false,
 };
 
-// 规则提供者配置
+// 规则提供者配置（已移除 reject）
 const RULE_PROVIDERS = new Map([
-  ['reject', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt',
-    path: './ruleset/loyalsoldier/reject.yaml',
-  }],
   ['google', {
     ...RULE_PROVIDER_COMMON,
     behavior: 'domain',
@@ -362,12 +355,7 @@ function main(config) {
     });
   }
 
-  // 添加 reject 规则，仅在 ads: true 时启用
-  if (RULE_OPTIONS.ads) {
-    rules.push('RULE-SET,reject,REJECT');
-  }
-
-  // 后置规则
+  // 后置规则（无 reject）
   rules.push(
     'RULE-SET,private,DIRECT',
     'RULE-SET,YouTube,节点选择',
