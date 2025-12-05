@@ -1,395 +1,271 @@
-// 全局常量
-const CONSTANTS = {
-  TEST_INTERVAL: 300,
-  TEST_TOLERANCE: 50,
-  ENABLE: true,
+// 规则集通用配置
+const ruleProviderCommon = {
+  "interval": 86400,
+  "proxy": "DIRECT",
+  "type": "http",
+  "format": "mrs",
 };
 
-// 分流规则开关配置（ads 已永久移除）
-const RULE_OPTIONS = {
-  apple: true,
-  microsoft: true,
-  github: true,
-  google: true,
-  openai: true,
-  spotify: true,
-  youtube: true,
-  bahamut: true,
-  netflix: true,
-  tiktok: true,
-  disney: true,
-  pixiv: true,
-  hbo: true,
-  biliintl: false,
-  tvb: true,
-  hulu: true,
-  primevideo: true,
-  telegram: true,
-  line: true,
-  whatsapp: true,
-  games: true,
-  japan: true,
-  tracker: true,
+// 1. 排除所有杂项/管理/通知信息（官网、流量剩余、客服等）
+const EX_INFO = [
+  "(?i)群|邀请|返利|循环|建议|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|使用|提示|特别|访问|支持|教程|关注|更新|作者|加入",
+  "可用|剩余|(\\b(USE|USED|TOTAL|Traffic|Expire|EMAIL|Panel|Channel|Author)\\b|\\d{4}-\\d{2}-\\d{2}|\\d+G)"
+].join('|');
+
+// 2. 排除所有高倍率标识
+const EX_RATE = [
+  "高倍|高倍率|倍率[2-9]",
+  "x[2-9]\\.?\\d*",
+  "\\([xX][2-9]\\.?\\d*\\)",
+  "\\[[xX][2-9]\\.?\\d*\\]",
+  "\\{[xX][2-9]\\.?\\d*\\}",
+  "（[xX][2-9]\\.?\\d*）",
+  "【[xX][2-9]\\.?\\d*】",
+  "【[2-9]x】",
+  "【\\d+[xX]】"
+].join('|');
+
+// 3. 组合最终排除字符串
+const EX_ALL = `${EX_INFO}|${EX_RATE}`;
+
+// 策略组通用配置
+const groupBaseOption = {
+  "interval": 300,
+  "url": "https://www.gstatic.com/generate_204",
+  "lazy": true,
+  "tolerance": 60,
+  "timeout": 5000,
+  "max-failed-times": 5,
+  "include-all": true,
+  "filter": ""
 };
 
-// 前置规则
-const FRONT_RULES = [
-  'PROCESS-NAME,SunloginClient,DIRECT',
-  'PROCESS-NAME,AnyDesk,DIRECT',
-  'PROCESS-NAME,NodeBabyLinkBackup,DIRECT',
-  'PROCESS-NAME,NodeBabyLinkClient,DIRECT',
-  'PROCESS-NAME,NodeBabyLinkRfile,DIRECT',
+// 国内DNS服务器 (DoH)
+const domesticNameservers = [
+  "quic://dns.alidns.com",
+  "https://doh.pub/dns-query",
+  "quic://dns.18bit.cn"
 ];
 
-// DNS 配置
-const DNS_CONFIG = {
-  enable: true,
-  listen: ':1053',
-  ipv6: false,
-  'prefer-h3': true,
-  'use-hosts': true,
-  'use-system-hosts': true,
-  'respect-rules': true,
-  'enhanced-mode': 'fake-ip',
-  'fake-ip-range': '198.18.0.1/16',
-  'fake-ip-filter': ['+.lan', '+.local', '+.market.xiaomi.com'],
-  nameserver: ['https://120.53.53.53/dns-query', 'https://223.5.5.5/dns-query'],
-  'proxy-server-nameserver': ['https://120.53.53.53/dns-query', 'https://223.5.5.5/dns-query'],
-  'nameserver-policy': {
-    'geosite:private': 'system',
-    'geosite:cn,steam@cn,category-games@cn,microsoft@cn,apple@cn': ['udp://119.29.29.29:53', 'udp://223.5.5.5:53'],
-  },
-};
+// 国外 DNS 服务器
+const foreignNameservers = [
+  "quic://dns.adguard-dns.com",
+  "https://cloudflare-dns.com/dns-query#h3=true",
+  "https://8.8.8.8/dns-query"
+];
 
-// 规则集通用配置
-const RULE_PROVIDER_COMMON = {
-  type: 'http',
-  format: 'yaml',
-  interval: 86400,
-};
+// 默认明文 DNS
+const defaultNameservers = ["223.5.5.5", "119.29.29.29"];
 
-// 代理组通用配置
-const GROUP_BASE_OPTION = {
-  interval: 300,
-  timeout: 3000,
-  url: 'http://cp.cloudflare.com/generate_204',
-  lazy: true,
-  'max-failed-times': 3,
-  hidden: false,
-};
-
-// 规则提供者配置（已移除 reject）
-const RULE_PROVIDERS = new Map([
-  ['google', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt',
-    path: './ruleset/loyalsoldier/google.yaml',
-  }],
-  ['proxy', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt',
-    path: './ruleset/loyalsoldier/proxy.yaml',
-  }],
-  ['direct', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt',
-    path: './ruleset/loyalsoldier/direct.yaml',
-  }],
-  ['private', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt',
-    path: './ruleset/loyalsoldier/private.yaml',
-  }],
-  ['gfw', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt',
-    path: './ruleset/loyalsoldier/gfw.yaml',
-  }],
-  ['tld-not-cn', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'domain',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt',
-    path: './ruleset/loyalsoldier/tld-not-cn.yaml',
-  }],
-  ['telegramcidr', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'ipcidr',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt',
-    path: './ruleset/loyalsoldier/telegramcidr.yaml',
-  }],
-  ['cncidr', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'ipcidr',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt',
-    path: './ruleset/loyalsoldier/cncidr.yaml',
-  }],
-  ['lancidr', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'ipcidr',
-    url: 'https://fastly.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt',
-    path: './ruleset/loyalsoldier/lancidr.yaml',
-  }],
-  ['YouTube', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'classical',
-    url: 'https://fastly.jsdelivr.net/gh/xiaolin-007/clash@main/rule/YouTube.txt',
-    path: './ruleset/xiaolin-007/YouTube.yaml',
-  }],
-  ['Netflix', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'classical',
-    url: 'https://fastly.jsdelivr.net/gh/xiaolin-007/clash@main/rule/Netflix.txt',
-    path: './ruleset/xiaolin-007/Netflix.yaml',
-  }],
-  ['Spotify', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'classical',
-    url: 'https://fastly.jsdelivr.net/gh/xiaolin-007/clash@main/rule/Spotify.txt',
-    path: './ruleset/xiaolin-007/Spotify.yaml',
-  }],
-  ['BilibiliHMT', {
-    ...RULE_PROVIDER_COMMON,
-    behavior: 'classical',
-    url: 'https://fastly.jsdelivr.net/gh/xiaolin-007/clash@main/rule/BilibiliHMT.txt',
-    path: './ruleset/xiaolin-007/BilibiliHMT.yaml',
-  }],
-]);
-
-// 主配置函数
-function main(config) {
-  // 验证代理配置
+// ========== 主函数 ==========
+const main = (config) => {
   const proxyCount = config?.proxies?.length ?? 0;
-  const proxyProviderCount = typeof config?.['proxy-providers'] === 'object' ? Object.keys(config['proxy-providers']).length : 0;
+  const proxyProviderCount = Object.keys(config?.["proxy-providers"] ?? {}).length;
   if (proxyCount === 0 && proxyProviderCount === 0) {
-    throw new Error('配置文件中未找到任何代理');
+    throw new Error("配置文件中未找到任何代理");
   }
 
-  // 全局设置
-  config['allow-lan'] = true;
-  config['bind-address'] = '*';
-  config['mode'] = 'rule';
-  config['profile'] = { 'store-selected': true, 'store-fake-ip': true };
-  config['unified-delay'] = true;
-  config['tcp-concurrent'] = true;
-  config['keep-alive-interval'] = 1800;
-  config['find-process-mode'] = 'strict';
-  config['geodata-mode'] = true;
-  config['geodata-loader'] = 'memconservative';
-  config['geo-auto-update'] = true;
-  config['geo-update-interval'] = 24;
-  config['sniffer'] = {
-    enable: true,
-    'force-dns-mapping': true,
-    'parse-pure-ip': false,
-    'override-destination': true,
-    sniff: {
-      TLS: { ports: [443, 8443] },
-      HTTP: { ports: [80, '8080-8880'] },
-      QUIC: { ports: [443, 8443] },
-    },
-    'skip-src-address': ['127.0.0.0/8', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12'],
-    'force-domain': [
-      '+.google.com',
-      '+.googleapis.com',
-      '+.googleusercontent.com',
-      '+.youtube.com',
-      '+.facebook.com',
-      '+.messenger.com',
-      '+.fbcdn.net',
-      'fbcdn-a.akamaihd.net',
-      '+.openai.com',
+  // 基础设置
+  config["mixed-port"] = 7890;
+  config["tcp-concurrent"] = true;
+  config["allow-lan"] = true;
+  config["ipv6"] = true;
+  config["log-level"] = "info";
+  config["unified-delay"] = true;
+  config["find-process-mode"] = "always";
+  config["global-client-fingerprint"] = "chrome";
+
+  // ========== DNS 配置（已彻底解决淘宝问题）==========
+  config["dns"] = {
+    "enable": true,
+    "listen": "0.0.0.0:1053",
+    "respect-rules": true,
+    "prefer-h3": false,
+    "ipv6": true,
+    "cache-algorithm": "arc",
+    "enhanced-mode": "fake-ip",
+    "fake-ip-range": "198.18.0.1/16",
+    "fake-ip-range6": "fdfe:dcba:9876::/64",
+    "fake-ip-filter": [
+      // ========== 阿里系全家桶（彻底解决淘宝/支付宝/高德/钉钉/优酷）==========
+      "+.taobao.com",
+      "+.taobao.net",
+      "+.tmall.com",
+      "+.tmall.hk",
+      "+.alibaba.com",
+      "+.alibaba-inc.com",
+      "+.alipay.com",
+      "+.alipayobjects.com",
+      "+.alipayobjects.net",
+      "+.alipaydns.com",
+      "+.alicdn.com",
+      "+.alimama.com",
+      "+.1688.com",
+      "+.amap.com",
+      "+.gaode.com",
+      "+.dingtalk.com",
+      "+.dingtalkapps.com",
+      "+.youku.com",
+      "+.tudou.com",
+      "+.ykimg.com",
+      "+.lazada.com",
+
+      // ========== 其他国内常用服务白名单 ==========
+      "+.bilibili.com",
+      "+.bilivideo.com",
+      "+.hdslb.com",
+      "+.biliapi.net",
+      "+.mi.com",
+      "+.xiaomi.com",
+      "+.xiaomi.net",
+      "+.miui.com",
+      "+.apple.com",
+      "+.apple.com.cn",
+      "+.icloud.com",
+      "+.mzstatic.com",
+      "+.crashlytics.com",
+      "+.lanzou.com",
+      "+.lanzoui.com",
+      "+.lanzoux.com",
+
+      // 原有内容
+      "dns.alidns.com",
+      "dns.google",
+      "cloudflare-dns.com",
+      "dns.18bit.cn",
+      "dns.ipv4dns.com",
+      "RULE-SET:Fakeip_Filter",
+      "RULE-SET:CN",
+      "RULE-SET:Private"
     ],
-    'skip-domain': ['Mijia Cloud', '+.oray.com'],
-  };
-  config['ntp'] = { enable: true, 'write-to-system': false, server: 'cn.ntp.org.cn' };
-  config['geox-url'] = {
-    geoip: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/geoip-lite.dat',
-    geosite: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/geosite.dat',
-    mmdb: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/country-lite.mmdb',
-    asn: 'https://codeberg.org/Joyen/flyclash/raw/branch/main/GeoLite2-ASN.mmdb',
-  };
-
-  // 覆盖 DNS 配置
-  config['dns'] = DNS_CONFIG;
-
-  // 如果分流未启用，直接返回
-  if (!CONSTANTS.ENABLE) {
-    return config;
-  }
-
-  // 添加直连代理
-  config['proxies'].push({
-    name: '直连',
-    type: 'direct',
-    udp: true,
-  });
-
-  // 定义代理组
-  config['proxy-groups'] = [
-    {
-      ...GROUP_BASE_OPTION,
-      name: '节点选择',
-      type: 'select',
-      proxies: ['故障转移', '手动选择', '延迟选优'],
-      filter: '^(?!.*(官网|套餐|流量|异常|剩余)).*$',
-      icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/adjust.svg',
-    },
-    {
-      ...GROUP_BASE_OPTION,
-      name: '手动选择',
-      type: 'select',
-      'include-all': true,
-      filter: '^(?!.*(官网|套餐|流量|异常|剩余|直连)).*$',
-      icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/adjust.svg',
-    },
-    {
-      ...GROUP_BASE_OPTION,
-      name: '延迟选优',
-      type: 'url-test',
-      interval: CONSTANTS.TEST_INTERVAL,
-      tolerance: CONSTANTS.TEST_TOLERANCE,
-      lazy: false,
-      'include-all': true,
-      filter: '^(?!.*(官网|套餐|流量|异常|剩余|直连)).*$',
-      icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/speed.svg',
-    },
-    {
-      ...GROUP_BASE_OPTION,
-      name: '故障转移',
-      type: 'fallback',
-      timeout: 1000,
-      interval: 1800,
-      'max-failed-times': 2,
-      'include-all': true,
-      filter: '^(?!.*(官网|套餐|流量|异常|剩余|直连)).*$',
-      icon: 'https://fastly.jsdelivr.net/gh/clash-verge-rev/clash-verge-rev.github.io@main/docs/assets/icons/ambulance.svg',
-    },
-  ];
-
-  // 动态添加分流规则
-  let rules = [...FRONT_RULES];
-
-  // 服务分流规则
-  const addServiceRules = (service, geosite, providerKey = null) => {
-    if (RULE_OPTIONS[service]) {
-      rules.push(`GEOSITE,${geosite},节点选择`);
-      if (providerKey) {
-        RULE_PROVIDERS.set(providerKey, {
-          ...RULE_PROVIDER_COMMON,
-          behavior: 'classical',
-          format: 'text',
-          url: `https://github.com/dahaha-365/YaNet/raw/refs/heads/dist/rulesets/mihomo/${providerKey}.list`,
-          path: `./ruleset/YaNet/${providerKey}.list`,
-        });
-      }
+    "default-nameserver": [...defaultNameservers],
+    "nameserver": [...foreignNameservers],
+    "proxy-server-nameserver": [...defaultNameservers],
+    "direct-nameserver": [...defaultNameservers],
+    "direct-nameserver-follow-policy": true,
+    "nameserver-policy": {
+      "geosite:cn": [...domesticNameservers]
     }
   };
 
-  // AI 服务
-  if (RULE_OPTIONS.openai) {
-    rules.push(
-      `DOMAIN-SUFFIX,grazie.ai,节点选择`,
-      `DOMAIN-SUFFIX,grazie.aws.intellij.net,节点选择`,
-      `RULE-SET,ai,节点选择`
-    );
-    RULE_PROVIDERS.set('ai', {
-      ...RULE_PROVIDER_COMMON,
-      behavior: 'classical',
-      format: 'text',
-      url: 'https://github.com/dahaha-365/YaNet/raw/refs/heads/dist/rulesets/mihomo/ai.list',
-      path: './ruleset/YaNet/ai.list',
+  // geodata & sniffer
+  config["geodata-mode"] = true;
+  config["geox-url"] = {
+    "geoip": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
+    "geosite": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
+    "mmdb": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
+    "asn": "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb"
+  };
+
+  config["sniffer"] = {
+    "enable": true,
+    "parse-pure-ip": true,
+    "sniff": {
+      "TLS": { "ports": ["443", "8443"] },
+      "HTTP": { "ports": ["80", "8080-8880"], "override-destination": true },
+      "QUIC": { "ports": ["443", "8443"] }
+    },
+    "force-domain": ["+.v2ex.com", "+.bilibili.com", "+.mi.com"],
+    "skip-domain": ["Mijia.Cloud.com", "router.asus.com", "time.apple.com"]
+  ]
+  };
+
+  // TUN 配置
+  config["tun"] = {
+    "enable": true,
+    "stack": "mixed",
+    "auto-route": true,
+    "auto-detect-interface": true,
+    "dns-hijack": ["any:53", "tcp://any:53"],
+    "device": "meta",              // 改成 meta 更稳（避免小米手机冲突）
+    "mtu": 1500,
+    "strict-route": true,
+    "udp-timeout": 300,
+    "endpoint-independent-nat": false
+  };
+
+  // 公共节点列表
+  const baseProxies = ["节点选择", "香港节点", "台湾节点", "日本节点", "新加坡节点", "美国节点", "全部节点", "负载均衡", "自动选择", "自动回退", "DIRECT"];
+  const baseProxiesCN = ["DIRECT", "节点选择", "香港节点", "台湾节点", "澳门节点", "全部节点", "负载均衡", "自动选择", "自动回退"];
+
+  // 工厂函数：生成策略组
+  function createGroups(groups) {
+    return groups.map(g => {
+      let [name, icon, type = "select", proxiesOrExtra = baseProxies, extra = {}] = g;
+      if (typeof type !== "string") { extra = proxiesOrExtra; proxiesOrExtra = type; type = "select"; }
+      let proxies = Array.isArray(proxiesOrExtra) ? proxiesOrExtra : (proxiesOrExtra === true ? baseProxiesCN : baseProxies);
+      if (proxiesOrExtra && typeof proxiesOrExtra === "object" && !Array.isArray(proxiesOrExtra)) {
+        proxies = proxiesOrExtra.proxies || proxies;
+        extra = { ...proxiesOrExtra, ...extra };
+        delete extra.proxies;
+      }
+      const cfg = { ...groupBaseOption, name, type, icon, proxies, ...extra };
+      if (!cfg["exclude-filter"]) cfg["exclude-filter"] = EX_INFO;
+      return cfg;
     });
   }
 
-  // 流媒体、通讯、游戏等服务
-  addServiceRules('youtube', 'youtube', 'YouTube');
-  addServiceRules('bahamut', 'bahamut');
-  addServiceRules('disney', 'disney');
-  addServiceRules('netflix', 'netflix', 'Netflix');
-  addServiceRules('tiktok', 'tiktok');
-  addServiceRules('spotify', 'spotify', 'Spotify');
-  addServiceRules('pixiv', 'pixiv');
-  addServiceRules('hbo', 'hbo');
-  addServiceRules('tvb', 'tvb');
-  addServiceRules('primevideo', 'primevideo');
-  addServiceRules('hulu', 'hulu');
-  addServiceRules('whatsapp', 'whatsapp');
-  addServiceRules('line', 'line');
-
-  if (RULE_OPTIONS.telegram) {
-    rules.push(`GEOIP,telegram,节点选择`);
+  // 地区分组工厂
+  function createRegionGroups({ name, icon, filter }) {
+    const sub = ["自动", "回退", "均衡"];
+    const proxies = sub.map(s => `${name}${s}`);
+    return [
+      { ...groupBaseOption, name: `${name}节点`, type: "select", proxies, filter, icon },
+      { ...groupBaseOption, name: `${name}自动`, type: "url-test", hidden: true, filter, "exclude-filter": EX_ALL, icon },
+      { ...groupBaseOption, name: `${name}回退`, type: "fallback", hidden: true, filter, "exclude-filter": EX_INFO, icon },
+      { ...groupBaseOption, name: `${name}均衡`, type: "load-balance", hidden: true, filter, "exclude-filter": EX_ALL, icon }
+    ];
   }
 
-  if (RULE_OPTIONS.games) {
-    rules.push(`GEOSITE,category-games@cn,DIRECT`, `GEOSITE,category-games,节点选择`);
-  }
+  // 手动顶级组
+  const manualGroups = [
+    { ...groupBaseOption, name: "Final", type: "select", proxies: ["节点选择", "DIRECT"], icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png" },
+    { ...groupBaseOption, name: "节点选择", type: "select", proxies: ["自动选择", "自动回退", "全部节点", "负载均衡", "香港节点", "台湾节点", "日本节点", "新加坡节点", "美国节点", "DIRECT"], icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Rocket.png" },
+    { ...groupBaseOption, name: "全部节点", type: "select", include-all: true, "exclude-filter": EX_INFO, icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Airport.png" },
+    { ...groupBaseOption, name: "自动选择", type: "url-test", include-all: true, hidden: true, "exclude-filter": EX_ALL, tolerance: 50, icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Airport.png" },
+    { ...groupBaseOption, name: "自动回退", type: "fallback", include-all: true, hidden: true, "exclude-filter": EX_INFO, icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Airport.png" },
+    { ...groupBaseOption, name: "负载均衡", type: "load-balance", include-all: true, hidden: true, "exclude-filter": EX_ALL, icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Airport.png" }
+  ];
 
-  if (RULE_OPTIONS.tracker) {
-    rules.push('GEOSITE,tracker,REJECT');
-  }
+  // 地区分组
+  const regionGroups = [
+    ...createRegionGroups({ name: "香港", icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png", filter: "(?i)🇭🇰|香港|(\\b(HK|Hong|HongKong)\\b)" }),
+    ...createRegionGroups({ name: "台湾", icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/China.png", filter: "(?i)🇨🇳|🇹🇼|台湾|(\\b(TW|Tai|Taiwan)\\b)" }),
+    ...createRegionGroups({ name: "日本", icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png", filter: "(?i)🇯🇵|日本|东京|(\\b(JP|Japan)\\b)" }),
+    ...createRegionGroups({ name: "新加坡", icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png", filter: "(?i)🇸🇬|新加坡|狮|(\\b(SG|Singapore)\\b)" }),
+    ...createRegionGroups({ name: "美国", icon: "https://gh-proxy.com/https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png", filter: "(?i)🇺🇸|美国|洛杉矶|圣何塞|(\\b(US|United States|America)\\b)" })
+  ];
 
-  if (RULE_OPTIONS.apple) {
-    rules.push('GEOSITE,apple-cn,DIRECT');
-  }
+  // 社交&国内分组（可继续按需添加）
+  const socialGroups = createGroups([]);
+  const cnAppGroups = createGroups([]);
 
-  addServiceRules('google', 'google', 'google');
-  addServiceRules('github', 'github');
+  // 合并所有策略组
+  config["proxy-groups"] = [...manualGroups, ...socialGroups, ...cnAppGroups, ...regionGroups];
 
-  if (RULE_OPTIONS.microsoft) {
-    rules.push(`GEOSITE,microsoft@cn,DIRECT`, `GEOSITE,microsoft,节点选择`);
-  }
+  // 规则集
+  config["rule-providers"] = {
+    "CN": { ...ruleProviderCommon, behavior: "domain", url: "https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/direct.mrs", path: "./ruleset/CN_Domain.mrs" },
+    "Private": { ...ruleProviderCommon, behavior: "domain", url: "https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/private.mrs", path: "./ruleset/Private_Domain.mrs" },
+    "Fakeip_Filter": { ...ruleProviderCommon, behavior: "domain", url: "https://cdn.jsdmirror.com/gh/DustinWin/ruleset_geodata@mihomo-ruleset/fakeip-filter.mrs", path: "./ruleset/Fakeip_Filter_Domain.mrs" },
+    "awavenue": { ...ruleProviderCommon, behavior: "domain", url: "https://cdn.jsdmirror.com/gh/TG-Twilight/AWAvenue-Ads-Rule@main/Filters/AWAvenue-Ads-Rule-Clash.mrs", path: "./ruleset/awavenue.mrs" },
+    "Private-ip": { ...ruleProviderCommon, behavior: "ipcidr", url: "https://cdn.jsdmirror.com/gh/MetaCubeX/meta-rules-dat@meta/geo/geoip/private.mrs", path: "./ruleset/Private_IP.mrs" },
+    "CN-ip": { ...ruleProviderCommon, behavior: "ipcidr", url: "https://cdn.jsdmirror.com/gh/Kwisma/clash-rules@release/cncidr.mrs", path: "./ruleset/CN_IP.mrs" },
+    "STUN": { ...ruleProviderCommon, behavior: "domain", url: "https://cdn.jsdmirror.com/gh/Kwisma/rules@main/rules/mihomo/STUN/STUN_Domain.mrs", path: "./ruleset/STUN_Domain.mrs" }
+  };
 
-  if (RULE_OPTIONS.japan) {
-    rules.push(`RULE-SET,category-bank-jp,节点选择`, `GEOIP,jp,节点选择,no-resolve`);
-    RULE_PROVIDERS.set('category-bank-jp', {
-      ...RULE_PROVIDER_COMMON,
-      behavior: 'domain',
-      format: 'mrs',
-      url: 'https://fastly.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@meta/geo/geosite/category-bank-jp.mrs',
-      path: './ruleset/MetaCubeX/category-bank-jp.mrs',
-    });
-  }
-
-  // 后置规则（无 reject）
-  rules.push(
-    'RULE-SET,private,DIRECT',
-    'RULE-SET,YouTube,节点选择',
-    'RULE-SET,Netflix,节点选择',
-    'RULE-SET,Spotify,节点选择',
-    'RULE-SET,google,节点选择',
-    'RULE-SET,proxy,节点选择',
-    'RULE-SET,gfw,节点选择',
-    'RULE-SET,tld-not-cn,节点选择',
-    'RULE-SET,direct,DIRECT',
-    'RULE-SET,lancidr,DIRECT,no-resolve',
-    'RULE-SET,cncidr,DIRECT,no-resolve',
-    'RULE-SET,telegramcidr,节点选择,no-resolve',
-    'GEOSITE,private,DIRECT',
-    'GEOIP,private,DIRECT,no-resolve',
-    'GEOSITE,cn,DIRECT',
-    'GEOIP,cn,DIRECT,no-resolve',
-    'DOMAIN-SUFFIX,cloudflare.com,节点选择',
-    'DOMAIN-SUFFIX,googleapis.cn,DIRECT',
-    'DOMAIN-SUFFIX,gstatic.com,节点选择',
-    'DOMAIN-SUFFIX,xn--ngstr-lra8j.com,节点选择',
-    'DOMAIN-SUFFIX,github.io,节点选择',
-    'DOMAIN,v2rayse.com,节点选择',
-    'MATCH,节点选择'
-  );
-
-  // 覆盖规则和规则提供者
-  config['rule-providers'] = Object.fromEntries(RULE_PROVIDERS);
-  config['rules'] = rules;
-
-  // 启用 UDP
-  config['proxies'].forEach(proxy => {
-    proxy.udp = true;
-  });
+  // 规则
+  config["rules"] = [
+    "SUB-RULE,(OR,((NETWORK,UDP),(NETWORK,TCP))),SUB-REJECT",
+    "SUB-RULE,(OR,((NETWORK,UDP),(NETWORK,TCP))),SUB-LAN",
+    "SUB-RULE,(OR,((NETWORK,UDP),(NETWORK,TCP))),SUB-DIRECT",
+    "MATCH,Final"
+  ];
+  config["sub-rules"] = {
+    "SUB-REJECT": ["RULE-SET,awavenue,REJECT-DROP", "RULE-SET,STUN,REJECT-DROP"],
+    "SUB-LAN": ["RULE-SET,Private,DIRECT", "RULE-SET,Private-ip,DIRECT,no-resolve"],
+    "SUB-DIRECT": ["RULE-SET,CN,DIRECT", "RULE-SET,CN-ip,DIRECT,no-resolve", "RULE-SET,Fakeip_Filter,DIRECT"]
+  };
 
   return config;
-}
+};
