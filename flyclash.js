@@ -92,7 +92,7 @@ proxy-groups:
   - name: 日本
     icon: "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png"
     type: url-test
-    url: http://www.gstatic.com/generate_204
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
     interval: 300
     tolerance: 50
     include-all: true
@@ -111,9 +111,9 @@ proxy-groups:
   - name: 全部
     icon: "https://cdn.jsdelivr.net/gh/GitMetaio/Surfing@rm/Home/icon/Globe.svg"
     type: url-test
-    url: http://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
+    url: http://connectivitycheck.platform.hicloud.com/generate_204
+    interval: 120
+    tolerance: 10
     include-all: true
     # 无 filter 和 exclude-filter，即包含所有节点
 
@@ -156,10 +156,12 @@ rule-providers:
     <<: *YAML
     path: ./ruleset/AWAvenue_Ads_Rule_Clash.yaml
     url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-Clash.yaml"
+
 #手动添加
 rules:
   - DOMAIN-SUFFIX,okx.com,PROXY
   - DOMAIN-SUFFIX,bilibili.com,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
   - DST-PORT,53,DIRECT
   - DST-PORT,853,DIRECT
   - RULE-SET,WebRTC,REJECT
