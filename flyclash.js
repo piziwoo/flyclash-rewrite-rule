@@ -54,12 +54,12 @@ proxy-groups:
     type: select
     include-all: true
     proxies:
-      - 香港
+      - 全部
       - 新加坡
       - 台湾
       - 日本
       - 美国
-      - 全部      # 已改为“全部”，包含所有节点自动选优
+      - 香港
 
   # 以下各地区组：自动测速 + 自动选最佳节点
   - name: 香港
