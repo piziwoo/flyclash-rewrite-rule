@@ -15,7 +15,7 @@ external-controller-cors:
   allow-origins:
     - "*"
   allow-private-network: true
-# DNS 优化配置
+# DNS 配置
 dns:
   enable: true
   ipv6: false
@@ -45,7 +45,6 @@ dns:
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
-  # 默认解析服务器
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
